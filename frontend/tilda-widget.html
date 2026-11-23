@@ -1,0 +1,295 @@
+<style>
+  /* Позиционирование кнопки: середина по высоте, прижата вправо */
+  #rag-chat-toggle {
+    position: fixed !important;
+    top: 50% !important;
+    right: 20px !important;
+    transform: translateY(-50%) !important;
+    z-index: 2147483647 !important;
+    width: 56px; 
+    height: 56px; 
+    border-radius: 50%; 
+    border: none; 
+    cursor: pointer;
+    background: #2d7ff9; 
+    color: white;
+    box-shadow: 0 4px 16px rgba(45, 127, 249, 0.3); 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    pointer-events: auto !important;
+    font-family: Arial, sans-serif;
+  }
+  #rag-chat-toggle:hover {
+    transform: translateY(-50%) scale(1.05) !important;
+    box-shadow: 0 6px 20px rgba(45, 127, 249, 0.4) !important;
+  }
+
+  /* Стили прайс-листа */
+  #rag-price-list table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  #rag-price-list th { position: sticky; top: 0; background: #e3f2fd; z-index: 2; }
+  
+  /* Адаптивность: на мобильных телефонах окно будет занимать почти весь экран */
+  @media (max-width: 768px) {
+    #rag-chat-window {
+      width: 90vw !important;
+      right: 5vw !important;
+      height: 85vh !important;
+    }
+  }
+</style>
+
+<!-- КНОПКА ОТКРЫТИЯ ЧАТА -->
+<button id="rag-chat-toggle">
+  <!-- Типовая SVG иконка чата (пузырь с точками) -->
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M8 10H8.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 10H12.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M16 10H16.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+
+<!-- ОКНО ЧАТА -->
+<div id="rag-chat-window" style="
+  display: none; position: fixed; top: 50%; right: 90px; transform: translateY(-50%);
+  width: 700px; height: 80vh; max-height: 900px; background: white; border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.25); overflow: hidden;
+  flex-direction: column; z-index: 2147483647; font-family: Arial, sans-serif;
+">
+  <!-- Шапка с вкладками -->
+  <div style="background: #2d7ff9; color: white; padding: 14px 20px; font-size: 16px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <span id="tab-chat" style="cursor: pointer; font-weight: bold; border-bottom: 2px solid white; padding-bottom: 4px;">💬 Чат</span>
+      <span id="tab-price" style="cursor: pointer; opacity: 0.75; padding-bottom: 4px;">📋 Прайс</span>
+    </div>
+    <span id="rag-chat-close" style="cursor: pointer; font-size: 22px; line-height: 1; padding: 0 4px;">✕</span>
+  </div>
+
+  <!-- ===== ВИД: ЧАТ ===== -->
+  <div id="chat-view" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+    <div id="rag-chat-messages" style="flex: 1; padding: 16px; overflow-y: auto; background: #f5f7fa; display: flex; flex-direction: column; gap: 10px;"></div>
+    <div style="padding: 14px 16px; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; background: white;">
+      <input id="rag-chat-input" type="text" placeholder="Ваш вопрос..." style="flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 24px; font-size: 14px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#2d7ff9'" onblur="this.style.borderColor='#ddd'">
+      <button id="rag-chat-send" style="width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; background: #2d7ff9; color: white; font-size: 18px; flex-shrink: 0; transition: background 0.2s;" onmouseover="this.style.background='#1a68e8'" onmouseout="this.style.background='#2d7ff9'">➤</button>
+    </div>
+  </div>
+
+  <!-- ===== ВИД: ПРАЙС ===== -->
+  <div id="price-view" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
+    <div style="padding: 12px 16px; background: #fff; border-bottom: 1px solid #eee; display: flex; gap: 12px; align-items: center;">
+      <select id="price-filter" style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none;">
+        <option value="all">Все категории</option>
+        <option value="Катушка">Катушки</option>
+        <option value="Приманка">Приманки</option>
+        <option value="Леска/Шнур">Леска / Шнур</option>
+        <option value="Удилище">Удилища</option>
+        <option value="Оснастка">Оснастка</option>
+        <option value="Эхолот">Эхолоты</option>
+      </select>
+      <span id="price-count" style="font-size: 12px; color: #888; white-space: nowrap; font-weight: bold;"></span>
+    </div>
+    <div id="rag-price-list" style="flex: 1; overflow-y: auto; background: #f8f9fa; padding: 0;">
+      <table>
+        <thead>
+          <tr>
+            <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #2d7ff9; width: 15%;">Артикул</th>
+            <th style="padding: 10px 12px; text-align: left; border-bottom: 2px solid #2d7ff9; width: 45%;">Товар</th>
+            <th style="padding: 10px 12px; text-align: right; border-bottom: 2px solid #2d7ff9; width: 20%;">Цена</th>
+            <th style="padding: 10px 12px; text-align: right; border-bottom: 2px solid #2d7ff9; width: 20%;">Остаток</th>
+          </tr>
+        </thead>
+        <tbody id="price-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const RAG_WEBHOOK_URL = 'https://rag.logicflow.pro/webhook/rag-chat';
+    let sessionId = '';
+
+    const toggleBtn  = document.getElementById('rag-chat-toggle');
+    const closeBtn   = document.getElementById('rag-chat-close');
+    const chatWindow = document.getElementById('rag-chat-window');
+    const sendBtn    = document.getElementById('rag-chat-send');
+    const inputField = document.getElementById('rag-chat-input');
+    const messagesBox= document.getElementById('rag-chat-messages');
+    const chatView   = document.getElementById('chat-view');
+    const priceView  = document.getElementById('price-view');
+    const tabChat    = document.getElementById('tab-chat');
+    const tabPrice   = document.getElementById('tab-price');
+    const filterSel  = document.getElementById('price-filter');
+
+    const PRICE_DATA = [
+      {sku:'HOOK-TAZL',name:'Крючки Тройник размер 6 (10шт/уп)',brand:'Mustad',cat:'Оснастка',price:450,stock:150},
+      {sku:'REEL-LFNP',name:'Безынерционная 3000 размер',brand:'Shimano',cat:'Катушка',price:8500,stock:8},
+      {sku:'BAIT-0YZ5',name:'Lucky John Воблер Окунь 12.5г',brand:'Lucky John',cat:'Приманка',price:320,stock:45},
+      {sku:'LINE-P4AO',name:'Плетеный шнур 15lb 150м',brand:'Daiwa',cat:'Леска/Шнур',price:1850,stock:12},
+      {sku:'BAIT-YV5X',name:'Rapala Блесна колеблющаяся Судак 22.0г',brand:'Rapala',cat:'Приманка',price:550,stock:67},
+      {sku:'SONAR-1BBV',name:'Garmin Эхолот 3 луча',brand:'Garmin',cat:'Эхолот',price:42000,stock:2},
+      {sku:'REEL-VTDE',name:'Мультипликаторная 5000 размер',brand:'Daiwa',cat:'Катушка',price:28000,stock:4},
+      {sku:'ROD-57WK',name:'Shimano Спиннинг 210см 15г',brand:'Shimano',cat:'Удилище',price:12500,stock:5},
+      {sku:'LINE-NGT8',name:'Плетеный шнур 25lb 200м',brand:'PowerPro',cat:'Леска/Шнур',price:3200,stock:9},
+      {sku:'BAIT-G57P',name:'Kosadaka Силикон Щука 8.5г',brand:'Kosadaka',cat:'Приманка',price:180,stock:89},
+      {sku:'BAIT-2K3M',name:'Shimano Блесна вращающаяся Жерех 14.0г',brand:'Shimano',cat:'Приманка',price:410,stock:52},
+      {sku:'ROD-X9P2',name:'Daiwa Фидер 360см до 120г',brand:'Daiwa',cat:'Удилище',price:9800,stock:3},
+      {sku:'REEL-9QWE',name:'Okuma Безынерционная 4000 размер',brand:'Okuma',cat:'Катушка',price:6200,stock:11},
+      {sku:'BAIT-R7T1',name:'Lucky John Силикон Сом 25.0г',brand:'Lucky John',cat:'Приманка',price:290,stock:34},
+      {sku:'LINE-2M8K',name:'Premium Плетеный шнур 10lb 100м',brand:'Premium',cat:'Леска/Шнур',price:950,stock:25},
+      {sku:'HOOK-X1Z9',name:'Owner Крючки Одинарный размер 8 (10шт/уп)',brand:'Owner',cat:'Оснастка',price:380,stock:200},
+      {sku:'SONAR-D4E2',name:'Lowrance Эхолот 2 луча',brand:'Lowrance',cat:'Эхолот',price:28500,stock:3},
+      {sku:'REEL-P6LK',name:'Ryobi Мультипликаторная 200 размер',brand:'Ryobi',cat:'Катушка',price:15000,stock:2},
+      {sku:'ROD-LK87',name:'Flagman Поплавочная 400см 5-20г',brand:'Flagman',cat:'Удилище',price:2100,stock:12},
+      {sku:'BAIT-V3B2',name:'Rapala Воблер Щука 18.0г',brand:'Rapala',cat:'Приманка',price:980,stock:18},
+      {sku:'BAIT-8WQ2',name:'Mepps Блесна вращающаяся Окунь 7.0г',brand:'Mepps',cat:'Приманка',price:250,stock:76},
+      {sku:'LINE-7V2C',name:'Sunline Плетеный шнур 30lb 300м',brand:'Sunline',cat:'Леска/Шнур',price:4000,stock:6},
+      {sku:'HOOK-4F9G',name:'Gamakatsu Крючки Двойной размер 4 (10шт/уп)',brand:'Gamakatsu',cat:'Оснастка',price:620,stock:95},
+      {sku:'BAIT-Q1W9',name:'Kosadaka Воблер Голавль 5.5г',brand:'Kosadaka',cat:'Приманка',price:450,stock:41},
+      {sku:'ROD-2J9H',name:'Gladiator Карповая 390см 3.5lb',brand:'Gladiator',cat:'Удилище',price:14500,stock:4},
+      {sku:'REEL-Z3X8',name:'Shimano Безынерционная 1000 размер',brand:'Shimano',cat:'Катушка',price:4500,stock:14},
+      {sku:'BAIT-M9K2',name:'Storm Силикон Лещ 6.0г',brand:'Storm',cat:'Приманка',price:210,stock:63},
+      {sku:'LINE-B8V1',name:'Power Phantom Плетеный шнур 20lb 200м',brand:'Power Phantom',cat:'Леска/Шнур',price:2400,stock:15},
+      {sku:'SONAR-P9L3',name:'Humminbird Эхолот 5 лучей',brand:'Humminbird',cat:'Эхолот',price:95000,stock:1},
+      {sku:'ROD-W8E2',name:'Balzer Троллинговая 210см 100-300г',brand:'Balzer',cat:'Удилище',price:18000,stock:2},
+      {sku:'BAIT-5T6Y',name:'Lucky John Поппер Окунь 10.0г',brand:'Lucky John',cat:'Приманка',price:340,stock:29},
+      {sku:'REEL-2K8P',name:'Daiwa Безынерционная 8000 размер',brand:'Daiwa',cat:'Катушка',price:35000,stock:3},
+      {sku:'HOOK-Z1X5',name:'VMC Крючки Тройник размер 10 (10шт/уп)',brand:'VMC',cat:'Оснастка',price:510,stock:110},
+      {sku:'BAIT-L9K4',name:'Rapala Крэнк Судак 16.0г',brand:'Rapala',cat:'Приманка',price:620,stock:22},
+      {sku:'LINE-9Q2W',name:'Berkley Плетеный шнур 12lb 120м',brand:'Berkley',cat:'Леска/Шнур',price:1550,stock:18},
+      {sku:'ROD-4M7N',name:'Shimano Спиннинг 240см 40г',brand:'Shimano',cat:'Удилище',price:19800,stock:6},
+      {sku:'BAIT-3P2R',name:'Kosadaka Джиг-головка 20г',brand:'Kosadaka',cat:'Приманка',price:95,stock:150},
+      {sku:'REEL-F9G1',name:'Okuma Мультипликаторная 300 размер',brand:'Okuma',cat:'Катушка',price:11200,stock:5},
+      {sku:'LINE-D8K2',name:'Varivas Плетеный шнур 8lb 150м',brand:'Varivas',cat:'Леска/Шнур',price:2800,stock:11},
+      {sku:'BAIT-7H4T',name:'Mepps Блесна колеблющаяся Щука 28.0г',brand:'Mepps',cat:'Приманка',price:780,stock:14},
+      {sku:'ROD-1Q9W',name:'Aiko Фидер 330см до 90г',brand:'Aiko',cat:'Удилище',price:5400,stock:9},
+      {sku:'REEL-8L2P',name:'Shimano Безынерционная 2500 размер',brand:'Shimano',cat:'Катушка',price:7200,stock:10},
+      {sku:'BAIT-2V9K',name:'Lucky John Силикон Жерех 10.0г',brand:'Lucky John',cat:'Приманка',price:240,stock:55},
+      {sku:'HOOK-5D8E',name:'Eagle Claw Крючки Одинарный размер 6 (10шт/уп)',brand:'Eagle Claw',cat:'Оснастка',price:330,stock:180},
+      {sku:'LINE-3K9W',name:'Yamatoyo Плетеный шнур 18lb 200м',brand:'Yamatoyo',cat:'Леска/Шнур',price:3600,stock:8},
+      {sku:'SONAR-4L9K',name:'Garmin Эхолот 1 луч',brand:'Garmin',cat:'Эхолот',price:12000,stock:4},
+      {sku:'ROD-9W2E',name:'Balzer Спиннинг 270см 60г',brand:'Balzer',cat:'Удилище',price:16500,stock:4},
+      {sku:'BAIT-8K3L',name:'Rapala Воблер Голавль 7.0г',brand:'Rapala',cat:'Приманка',price:1100,stock:12},
+      {sku:'REEL-3P9Q',name:'Daiwa Безынерционная 5000 размер',brand:'Daiwa',cat:'Катушка',price:18500,stock:6},
+      {sku:'BAIT-1L9W',name:'Kosadaka Силикон Карп 14.0г',brand:'Kosadaka',cat:'Приманка',price:260,stock:71}
+    ];
+
+    function fmtPrice(n) { return n.toLocaleString('ru-RU') + ' ₽'; }
+    function stockColor(s) { return s > 5 ? '#388e3c' : (s > 0 ? '#f57c00' : '#d32f2f'); }
+
+    function renderPrice() {
+        const cat = filterSel.value;
+        const list = cat === 'all' ? PRICE_DATA : PRICE_DATA.filter(i => i.cat === cat);
+        const tbody = document.getElementById('price-table-body');
+        tbody.innerHTML = '';
+        list.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.style.cssText = 'border-bottom: 1px solid #e0e0e0; background: #fff; transition: background 0.2s;';
+            tr.onmouseover = function() { this.style.background = '#f0f7ff'; };
+            tr.onmouseout = function() { this.style.background = '#fff'; };
+            tr.innerHTML =
+                '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px; color: #2d7ff9; font-weight: bold;">' + item.sku + '</td>' +
+                '<td style="padding: 10px 12px;">' + item.name + '<br><span style="font-size: 11px; color: #888;">' + item.brand + ' · ' + item.cat + '</span></td>' +
+                '<td style="padding: 10px 12px; text-align: right; font-weight: bold; white-space: nowrap; font-size: 14px;">' + fmtPrice(item.price) + '</td>' +
+                '<td style="padding: 10px 12px; text-align: right; color: ' + stockColor(item.stock) + '; font-weight: bold;">' + item.stock + ' шт.</td>';
+            tbody.appendChild(tr);
+        });
+        document.getElementById('price-count').textContent = 'Найдено: ' + list.length;
+    }
+
+    function switchTab(tab) {
+        if (tab === 'chat') {
+            chatView.style.display = 'flex';
+            priceView.style.display = 'none';
+            tabChat.style.borderBottom = '2px solid white'; tabChat.style.opacity = '1'; tabChat.style.fontWeight = 'bold';
+            tabPrice.style.borderBottom = 'none'; tabPrice.style.opacity = '0.75'; tabPrice.style.fontWeight = 'normal';
+        } else {
+            chatView.style.display = 'none';
+            priceView.style.display = 'flex';
+            tabPrice.style.borderBottom = '2px solid white'; tabPrice.style.opacity = '1'; tabPrice.style.fontWeight = 'bold';
+            tabChat.style.borderBottom = 'none'; tabChat.style.opacity = '0.75'; tabChat.style.fontWeight = 'normal';
+            renderPrice();
+        }
+    }
+
+    function toggleChat() {
+        if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
+            sessionId = '';
+            messagesBox.innerHTML = '<div style="background:#e3f2fd;padding:12px 16px;border-radius:12px;font-size:14px;max-width:80%;color:#333;line-height:1.5;">Привет! Я помогу найти информацию о ценах, наличии или артикулах товаров. Задайте вопрос (минимум 3 слова).</div>';
+            switchTab('chat');
+            chatWindow.style.display = 'flex';
+            setTimeout(() => inputField.focus(), 100);
+        } else {
+            chatWindow.style.display = 'none';
+        }
+    }
+
+    async function sendMessage() {
+        const msg = inputField.value.trim();
+        if (!msg) return;
+
+        const wordCount = msg.split(/\s+/).filter(w => w.length > 0).length;
+        if (wordCount < 3) {
+            addMessage('❓ Задайте вопрос подробнее (минимум 3 слова). Например: "Сколько стоит катушка Shimano?"', 'bot-error');
+            return;
+        }
+
+        addMessage(msg, 'user');
+        inputField.value = '';
+        const loading = addMessage('⏳ Думаю...', 'bot-loading');
+
+        try {
+            const res = await fetch(RAG_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, session_id: sessionId })
+            });
+            if (!res.ok) throw new Error('Ошибка сети: ' + res.status);
+            const data = await res.json();
+            sessionId = data.session_id || sessionId;
+            loading.remove();
+            addMessage(data.answer, 'bot');
+            if (data.sources && data.sources.length > 0) {
+                addSource('📄 Источник: ' + data.sources.join(', '));
+            }
+        } catch (err) {
+            loading.remove();
+            addMessage('⚠️ Ошибка соединения. Попробуйте позже.', 'bot-error');
+            console.error('RAG Error:', err);
+        }
+    }
+
+    function addMessage(text, type) {
+        const div = document.createElement('div');
+        const styles = {
+            'user': 'background: #2d7ff9; color: white; align-self: flex-end; border-radius: 12px 12px 2px 12px;',
+            'bot': 'background: white; color: #333; align-self: flex-start; border-radius: 12px 12px 12px 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);',
+            'bot-loading': 'background: #fff3cd; color: #856404; align-self: flex-start; border-radius: 12px;',
+            'bot-error': 'background: #f8d7da; color: #721c24; align-self: flex-start; border-radius: 12px;'
+        };
+        div.style.cssText = 'padding: 12px 16px; font-size: 14px; max-width: 80%; word-wrap: break-word; white-space: pre-wrap; line-height: 1.5; ' + (styles[type] || styles['bot']);
+        div.textContent = text;
+        messagesBox.appendChild(div);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+        return div;
+    }
+    
+    function addSource(text) {
+        const div = document.createElement('div');
+        div.style.cssText = 'font-size: 11px; color: #888; align-self: flex-start; padding: 2px 16px 12px 16px;';
+        div.textContent = text;
+        messagesBox.appendChild(div);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    if (toggleBtn) toggleBtn.addEventListener('click', toggleChat);
+    if (closeBtn)  closeBtn.addEventListener('click', toggleChat);
+    if (sendBtn)   sendBtn.addEventListener('click', sendMessage);
+    if (tabChat)   tabChat.addEventListener('click', () => switchTab('chat'));
+    if (tabPrice)  tabPrice.addEventListener('click', () => switchTab('price'));
+    if (filterSel) filterSel.addEventListener('change', renderPrice);
+    if (inputField) inputField.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
+});
+</script>
