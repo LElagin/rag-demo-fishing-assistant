@@ -1,0 +1,112 @@
+{
+  "name": "QWEN RAG WF-3A Error Alert Email",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "211a7645-cb18-4d69-ac10-b57a523bfec9",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorData = $input.first().json;\nconst wfName = errorData.workflow?.name || 'Неизвестный Workflow';\nconst nodeName = errorData.node?.name || 'Неизвестный узел';\nconst errMsg = errorData.error?.message || 'Нет сообщения об ошибке';\nconst execId = errorData.execution?.id || 'N/A';\nconst wfId = errorData.workflow?.id || 'N/A';\nconst baseUrl = 'http://localhost:5678';\n\nconst htmlBody = `\n  <div style=\"font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;\">\n    <h2 style=\"color: #d9534f; margin-bottom: 20px;\">🚨 Ошибка в RAG-пайплайне</h2>\n    <table style=\"border-collapse: collapse; width: 100%; max-width: 600px; margin-bottom: 20px;\">\n      <tr>\n        <td style=\"padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold; width: 120px;\">Воркфлоу:</td>\n        <td style=\"padding: 8px; border-bottom: 1px solid #ddd;\">${wfName}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;\">Узел:</td>\n        <td style=\"padding: 8px; border-bottom: 1px solid #ddd;\">${nodeName}</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 8px; border-bottom: 1px solid #ddd; font-weight: bold;\">Сообщение:</td>\n        <td style=\"padding: 8px; border-bottom: 1px solid #ddd; color: #d9534f;\">${errMsg}</td>\n      </tr>\n    </table>\n    <a href=\"${baseUrl}/workflow/${wfId}/executions/${execId}\" style=\"display: inline-block; padding: 10px 15px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;\">Открыть Execution в n8n</a>\n    <p style=\"margin-top: 30px; font-size: 12px; color: #888;\">Автоматическое сообщение от системы мониторинга WF-3A.</p>\n  </div>\n`;\n\nreturn [{ json: { \n  subject: `🚨 СБОЙ: ${wfName}`,\n  htmlBody: htmlBody \n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f403e534-771a-49a9-8040-c121b780e647",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "fromEmail": "elagin0909@yandex.ru",
+        "toEmail": "elagin09@rambler.ru",
+        "subject": "={{ $json.subject }}",
+        "html": "={{ $json.htmlBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "c0dfcac6-7608-42b2-b53e-4d70abf3b773",
+      "name": "Send an Email",
+      "webhookId": "8f15d644-6e7b-4751-87ad-6007d45da2e6",
+      "credentials": {
+        "smtp": {
+          "id": "umso3287isa5VYEN",
+          "name": "Yandex SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ],
+      "id": "b44ee977-e1cd-419e-9bf3-71e6c5553402",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "5399400c-7f24-483a-bf5c-fd8334694f5f",
+  "meta": {
+    "instanceId": "07f5c08fcf3b99a9fe0a37442391f215c67465f7438c40b14a531331c57ef922"
+  },
+  "nodeGroups": [],
+  "id": "T6uudjUoDrYbBKCb",
+  "tags": []
+}

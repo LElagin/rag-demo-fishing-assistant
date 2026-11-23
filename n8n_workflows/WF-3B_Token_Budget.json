@@ -1,0 +1,213 @@
+{
+  "name": "QWEN WF-3B Контроль бюджета токенов на Email",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1168,
+        16
+      ],
+      "id": "90aac4b0-49a5-4742-9b4a-6c8736202aa3",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(SUM(prompt_tokens + completion_tokens), 0) as total_tokens_spent\nFROM llm_usage_log\nWHERE finished_at >= NOW() - INTERVAL '24 hours';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -704,
+        16
+      ],
+      "id": "d53da13f-e797-4bf0-b7cd-b9e206984651",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const spent = Number($input.first().json.total_tokens_spent) || 0;\nconst budget = Number($('Set').first().json.dailyBudgetTokens) || 0;\nconst isExceeded = spent >= budget;\n\nconst htmlBody = `\n  <h2 style=\"color: #f57c00;\">⚠️ ВНИМАНИЕ: Расход токенов</h2>\n  <p>Система RAG-ассистента приближается к установленному лимиту или превысила его.</p>\n  <table style=\"border-collapse: collapse; width: 100%; margin: 15px 0;\">\n    <tr style=\"background: #f5f5f5;\">\n      <th style=\"padding: 8px; text-align: left;\">Потрачено за 24ч:</th>\n      <td style=\"padding: 8px; font-weight: bold; color: ${isExceeded ? '#d32f2f' : '#388e3c'};\">${spent} токенов</td>\n    </tr>\n    <tr>\n      <th style=\"padding: 8px; text-align: left;\">Установленный порог:</th>\n      <td style=\"padding: 8px;\">${budget} токенов</td>\n    </tr>\n  </table>\n  <p><strong>Рекомендация:</strong> проверьте баланс API-ключа и при необходимости пополните счет.</p>\n  <hr>\n  <p style=\"color: #666; font-size: 12px;\">Система мониторинга WF-3B</p>\n`;\n\nreturn [{\n  json: {\n    isExceeded: isExceeded,\n    subject: `⚠️ ЛИМИТ ТОКЕНОВ: Потрачено ${spent} из ${budget}`,\n    htmlBody: htmlBody\n  }\n}];;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        16
+      ],
+      "id": "86e23a2c-7a3d-4bd3-a8f2-880f14be4c99",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "eda438b2-0aab-449a-94d3-b9cc4ddf5c47",
+              "leftValue": "={{ $json.isExceeded }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        16
+      ],
+      "id": "0306f53c-3f86-4195-a639-e75dce067e0b",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "fromEmail": "elagin0909@yandex.ru",
+        "toEmail": "=elagin09@rambler.ru",
+        "subject": "={{ $json.subject }}",
+        "html": "={{ $json.htmlBody }}",
+        "options": {}
+      },
+      "id": "a40df4d9-accb-4d28-9fea-61b02fc03f7c",
+      "name": "Яндекс SMTP — отправка письма",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b8993e2f-14bf-4c2e-873e-e2d5d083d1ef",
+      "credentials": {
+        "smtp": {
+          "id": "umso3287isa5VYEN",
+          "name": "Yandex SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c210bca-2522-4c1c-8cb5-3cd441ee4ea1",
+              "name": "dailyBudgetTokens",
+              "value": "50000",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -928,
+        16
+      ],
+      "id": "684d095d-7787-4889-8e70-8e66d564de23",
+      "name": "Set"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Яндекс SMTP — отправка письма",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "T6uudjUoDrYbBKCb",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "3b3715ea-bc89-4ed4-a74b-34b6b03e20e0",
+  "meta": {
+    "instanceId": "07f5c08fcf3b99a9fe0a37442391f215c67465f7438c40b14a531331c57ef922"
+  },
+  "nodeGroups": [],
+  "id": "H6WXZaFsWpyacEgM",
+  "tags": []
+}

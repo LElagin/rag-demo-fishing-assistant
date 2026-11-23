@@ -1,0 +1,52 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.42.6
+    container_name: rag-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=${WEBHOOK_BASE_URL}/
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - GENERIC_TIMEZONE=Europe/Moscow
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - rag-net
+
+  rag-postgres:
+    image: pgvector/pgvector:pg16
+    container_name: rag-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - rag_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - rag-net
+
+  data-server:
+    image: nginx:alpine
+    container_name: rag-data-server
+    restart: unless-stopped
+    volumes:
+      - ${DATA_FILES_PATH}:/usr/share/nginx/html:ro
+    networks:
+      - rag-net
+
+volumes:
+  n8n_data:
+  rag_pgdata:
+
+networks:
+  rag-net:
+    name: rag-shared-network
+    driver: bridge
