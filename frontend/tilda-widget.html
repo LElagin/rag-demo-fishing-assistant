@@ -1,48 +1,24 @@
 <style>
-  /* Позиционирование кнопки: середина по высоте, прижата вправо */
   #rag-chat-toggle {
-    position: fixed !important;
-    top: 50% !important;
-    right: 20px !important;
-    transform: translateY(-50%) !important;
-    z-index: 2147483647 !important;
-    width: 56px; 
-    height: 56px; 
-    border-radius: 50%; 
-    border: none; 
-    cursor: pointer;
-    background: #2d7ff9; 
-    color: white;
-    box-shadow: 0 4px 16px rgba(45, 127, 249, 0.3); 
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    pointer-events: auto !important;
+    position: fixed !important; top: 50% !important; right: 20px !important;
+    transform: translateY(-50%) !important; z-index: 2147483647 !important;
+    width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+    background: #2d7ff9; color: white; box-shadow: 0 4px 16px rgba(45, 127, 249, 0.3); 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; 
+    align-items: center; justify-content: center; pointer-events: auto !important;
     font-family: Arial, sans-serif;
   }
   #rag-chat-toggle:hover {
-    transform: translateY(-50%) scale(1.05) !important;
-    box-shadow: 0 6px 20px rgba(45, 127, 249, 0.4) !important;
+    transform: translateY(-50%) scale(1.05) !important; box-shadow: 0 6px 20px rgba(45, 127, 249, 0.4) !important;
   }
-
-  /* Стили прайс-листа */
   #rag-price-list table { border-collapse: collapse; width: 100%; font-size: 13px; }
   #rag-price-list th { position: sticky; top: 0; background: #e3f2fd; z-index: 2; }
-  
-  /* Адаптивность: на мобильных телефонах окно будет занимать почти весь экран */
   @media (max-width: 768px) {
-    #rag-chat-window {
-      width: 90vw !important;
-      right: 5vw !important;
-      height: 85vh !important;
-    }
+    #rag-chat-window { width: 90vw !important; right: 5vw !important; height: 85vh !important; }
   }
 </style>
 
-<!-- КНОПКА ОТКРЫТИЯ ЧАТА -->
 <button id="rag-chat-toggle">
-  <!-- Типовая SVG иконка чата (пузырь с точками) -->
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="M8 10H8.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -51,14 +27,7 @@
   </svg>
 </button>
 
-<!-- ОКНО ЧАТА -->
-<div id="rag-chat-window" style="
-  display: none; position: fixed; top: 50%; right: 90px; transform: translateY(-50%);
-  width: 700px; height: 80vh; max-height: 900px; background: white; border-radius: 16px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.25); overflow: hidden;
-  flex-direction: column; z-index: 2147483647; font-family: Arial, sans-serif;
-">
-  <!-- Шапка с вкладками -->
+<div id="rag-chat-window" style="display: none; position: fixed; top: 50%; right: 90px; transform: translateY(-50%); width: 700px; height: 80vh; max-height: 900px; background: white; border-radius: 16px; box-shadow: 0 12px 48px rgba(0,0,0,0.25); overflow: hidden; flex-direction: column; z-index: 2147483647; font-family: Arial, sans-serif;">
   <div style="background: #2d7ff9; color: white; padding: 14px 20px; font-size: 16px; display: flex; justify-content: space-between; align-items: center;">
     <div style="display: flex; gap: 16px; align-items: center;">
       <span id="tab-chat" style="cursor: pointer; font-weight: bold; border-bottom: 2px solid white; padding-bottom: 4px;">💬 Чат</span>
@@ -66,8 +35,6 @@
     </div>
     <span id="rag-chat-close" style="cursor: pointer; font-size: 22px; line-height: 1; padding: 0 4px;">✕</span>
   </div>
-
-  <!-- ===== ВИД: ЧАТ ===== -->
   <div id="chat-view" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
     <div id="rag-chat-messages" style="flex: 1; padding: 16px; overflow-y: auto; background: #f5f7fa; display: flex; flex-direction: column; gap: 10px;"></div>
     <div style="padding: 14px 16px; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; background: white;">
@@ -75,8 +42,6 @@
       <button id="rag-chat-send" style="width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer; background: #2d7ff9; color: white; font-size: 18px; flex-shrink: 0; transition: background 0.2s;" onmouseover="this.style.background='#1a68e8'" onmouseout="this.style.background='#2d7ff9'">➤</button>
     </div>
   </div>
-
-  <!-- ===== ВИД: ПРАЙС ===== -->
   <div id="price-view" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
     <div style="padding: 12px 16px; background: #fff; border-bottom: 1px solid #eee; display: flex; gap: 12px; align-items: center;">
       <select id="price-filter" style="flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none;">
@@ -110,18 +75,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     const RAG_WEBHOOK_URL = 'https://rag.logicflow.pro/webhook/rag-chat';
     let sessionId = '';
-
-    const toggleBtn  = document.getElementById('rag-chat-toggle');
-    const closeBtn   = document.getElementById('rag-chat-close');
+    const toggleBtn = document.getElementById('rag-chat-toggle');
+    const closeBtn = document.getElementById('rag-chat-close');
     const chatWindow = document.getElementById('rag-chat-window');
-    const sendBtn    = document.getElementById('rag-chat-send');
+    const sendBtn = document.getElementById('rag-chat-send');
     const inputField = document.getElementById('rag-chat-input');
-    const messagesBox= document.getElementById('rag-chat-messages');
-    const chatView   = document.getElementById('chat-view');
-    const priceView  = document.getElementById('price-view');
-    const tabChat    = document.getElementById('tab-chat');
-    const tabPrice   = document.getElementById('tab-price');
-    const filterSel  = document.getElementById('price-filter');
+    const messagesBox = document.getElementById('rag-chat-messages');
+    const chatView = document.getElementById('chat-view');
+    const priceView = document.getElementById('price-view');
+    const tabChat = document.getElementById('tab-chat');
+    const tabPrice = document.getElementById('tab-price');
+    const filterSel = document.getElementById('price-filter');
 
     const PRICE_DATA = [
       {sku:'HOOK-TAZL',name:'Крючки Тройник размер 6 (10шт/уп)',brand:'Mustad',cat:'Оснастка',price:450,stock:150},
@@ -189,8 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tr.style.cssText = 'border-bottom: 1px solid #e0e0e0; background: #fff; transition: background 0.2s;';
             tr.onmouseover = function() { this.style.background = '#f0f7ff'; };
             tr.onmouseout = function() { this.style.background = '#fff'; };
-            tr.innerHTML =
-                '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px; color: #2d7ff9; font-weight: bold;">' + item.sku + '</td>' +
+            tr.innerHTML = '<td style="padding: 10px 12px; font-family: monospace; font-size: 12px; color: #2d7ff9; font-weight: bold;">' + item.sku + '</td>' +
                 '<td style="padding: 10px 12px;">' + item.name + '<br><span style="font-size: 11px; color: #888;">' + item.brand + ' · ' + item.cat + '</span></td>' +
                 '<td style="padding: 10px 12px; text-align: right; font-weight: bold; white-space: nowrap; font-size: 14px;">' + fmtPrice(item.price) + '</td>' +
                 '<td style="padding: 10px 12px; text-align: right; color: ' + stockColor(item.stock) + '; font-weight: bold;">' + item.stock + ' шт.</td>';
@@ -201,13 +164,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function switchTab(tab) {
         if (tab === 'chat') {
-            chatView.style.display = 'flex';
-            priceView.style.display = 'none';
+            chatView.style.display = 'flex'; priceView.style.display = 'none';
             tabChat.style.borderBottom = '2px solid white'; tabChat.style.opacity = '1'; tabChat.style.fontWeight = 'bold';
             tabPrice.style.borderBottom = 'none'; tabPrice.style.opacity = '0.75'; tabPrice.style.fontWeight = 'normal';
         } else {
-            chatView.style.display = 'none';
-            priceView.style.display = 'flex';
+            chatView.style.display = 'none'; priceView.style.display = 'flex';
             tabPrice.style.borderBottom = '2px solid white'; tabPrice.style.opacity = '1'; tabPrice.style.fontWeight = 'bold';
             tabChat.style.borderBottom = 'none'; tabChat.style.opacity = '0.75'; tabChat.style.fontWeight = 'normal';
             renderPrice();
@@ -218,45 +179,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (chatWindow.style.display === 'none' || chatWindow.style.display === '') {
             sessionId = '';
             messagesBox.innerHTML = '<div style="background:#e3f2fd;padding:12px 16px;border-radius:12px;font-size:14px;max-width:80%;color:#333;line-height:1.5;">Привет! Я помогу найти информацию о ценах, наличии или артикулах товаров. Задайте вопрос (минимум 3 слова).</div>';
-            switchTab('chat');
-            chatWindow.style.display = 'flex';
+            switchTab('chat'); chatWindow.style.display = 'flex';
             setTimeout(() => inputField.focus(), 100);
-        } else {
-            chatWindow.style.display = 'none';
-        }
+        } else { chatWindow.style.display = 'none'; }
     }
 
     async function sendMessage() {
         const msg = inputField.value.trim();
         if (!msg) return;
-
         const wordCount = msg.split(/\s+/).filter(w => w.length > 0).length;
         if (wordCount < 3) {
             addMessage('❓ Задайте вопрос подробнее (минимум 3 слова). Например: "Сколько стоит катушка Shimano?"', 'bot-error');
             return;
         }
-
-        addMessage(msg, 'user');
-        inputField.value = '';
+        addMessage(msg, 'user'); inputField.value = '';
         const loading = addMessage('⏳ Думаю...', 'bot-loading');
-
         try {
-            const res = await fetch(RAG_WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: msg, session_id: sessionId })
-            });
+            const res = await fetch(RAG_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, session_id: sessionId }) });
             if (!res.ok) throw new Error('Ошибка сети: ' + res.status);
             const data = await res.json();
             sessionId = data.session_id || sessionId;
-            loading.remove();
-            addMessage(data.answer, 'bot');
-            if (data.sources && data.sources.length > 0) {
-                addSource('📄 Источник: ' + data.sources.join(', '));
-            }
+            loading.remove(); addMessage(data.answer, 'bot');
+            if (data.sources && data.sources.length > 0) addSource('📄 Источник: ' + data.sources.join(', '));
         } catch (err) {
-            loading.remove();
-            addMessage('⚠️ Ошибка соединения. Попробуйте позже.', 'bot-error');
+            loading.remove(); addMessage('⚠️ Ошибка соединения. Попробуйте позже.', 'bot-error');
             console.error('RAG Error:', err);
         }
     }
@@ -270,25 +216,20 @@ document.addEventListener('DOMContentLoaded', function() {
             'bot-error': 'background: #f8d7da; color: #721c24; align-self: flex-start; border-radius: 12px;'
         };
         div.style.cssText = 'padding: 12px 16px; font-size: 14px; max-width: 80%; word-wrap: break-word; white-space: pre-wrap; line-height: 1.5; ' + (styles[type] || styles['bot']);
-        div.textContent = text;
-        messagesBox.appendChild(div);
-        messagesBox.scrollTop = messagesBox.scrollHeight;
+        div.textContent = text; messagesBox.appendChild(div); messagesBox.scrollTop = messagesBox.scrollHeight;
         return div;
     }
-    
     function addSource(text) {
         const div = document.createElement('div');
         div.style.cssText = 'font-size: 11px; color: #888; align-self: flex-start; padding: 2px 16px 12px 16px;';
-        div.textContent = text;
-        messagesBox.appendChild(div);
-        messagesBox.scrollTop = messagesBox.scrollHeight;
+        div.textContent = text; messagesBox.appendChild(div); messagesBox.scrollTop = messagesBox.scrollHeight;
     }
 
     if (toggleBtn) toggleBtn.addEventListener('click', toggleChat);
-    if (closeBtn)  closeBtn.addEventListener('click', toggleChat);
-    if (sendBtn)   sendBtn.addEventListener('click', sendMessage);
-    if (tabChat)   tabChat.addEventListener('click', () => switchTab('chat'));
-    if (tabPrice)  tabPrice.addEventListener('click', () => switchTab('price'));
+    if (closeBtn) closeBtn.addEventListener('click', toggleChat);
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+    if (tabChat) tabChat.addEventListener('click', () => switchTab('chat'));
+    if (tabPrice) tabPrice.addEventListener('click', () => switchTab('price'));
     if (filterSel) filterSel.addEventListener('change', renderPrice);
     if (inputField) inputField.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
 });
