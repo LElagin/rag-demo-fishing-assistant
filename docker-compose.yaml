@@ -2,6 +2,8 @@ services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:2.42.6
     container_name: rag-n8n
+    dns:
+      - 8.8.8.8
     restart: unless-stopped
     ports:
       - "5678:5678"

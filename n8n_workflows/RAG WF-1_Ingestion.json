@@ -1,5 +1,5 @@
 {
-  "name": "QWEN RAG WF-1 Ingestion GigaChat",
+  "name": "RAG WF-1_Ingestion",
   "nodes": [
     {
       "parameters": {},
@@ -20,7 +20,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        560,
+        784,
         0
       ],
       "id": "126ee6a9-5f7a-4c9e-b731-fa03407734aa",
@@ -56,8 +56,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        880,
-        96
+        1184,
+        160
       ],
       "id": "7838170f-e572-4aae-a293-15d2d83adb36",
       "name": "HTTP Request: Embedding",
@@ -72,15 +72,15 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO documents (text, metadata, embedding)\nVALUES ($1, $2::jsonb, $3::vector);",
+        "query": "   INSERT INTO documents (text, metadata, embedding, client_id)\n   VALUES ($1, $2::jsonb, $3::vector, $4);",
         "options": {
-          "queryReplacement": "=={{ [$json.text, JSON.stringify($json.metadata), JSON.stringify($json.data[0].embedding)] }}"
+          "queryReplacement": "=={{ [$json.text, JSON.stringify($json.metadata), JSON.stringify($json.data[0].embedding), $('Edit Fields').item.json.client_id] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.7,
       "position": [
-        1408,
+        1632,
         16
       ],
       "id": "591403eb-48a7-42ac-b8e7-a8df1fc005ac",
@@ -106,7 +106,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        256,
+        480,
         0
       ],
       "id": "66bb645d-40d0-489c-8c46-241748068f3b",
@@ -121,11 +121,48 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        1184,
+        1376,
         16
       ],
       "id": "8f6dbb6e-9b21-482f-aafb-fd2f85346df5",
       "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25af6c07-0c3f-4d22-92d2-3f446b7fa115",
+              "name": "client_id",
+              "value": "sh1m4n0",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "2d75d17c-dbe5-4ac4-a098-bdfba9244c62",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        0
+      ],
+      "id": "e917fd01-a3f9-4256-a1b4-8247b8e440c4",
+      "name": "Wait",
+      "webhookId": "39e6ca29-bc54-4e19-93a2-88b889b98ef3"
     }
   ],
   "pinData": {
@@ -143,7 +180,7 @@
       "main": [
         [
           {
-            "node": "HTTP Request",
+            "node": "Edit Fields",
             "type": "main",
             "index": 0
           }
@@ -154,12 +191,7 @@
       "main": [
         [
           {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "HTTP Request: Embedding",
+            "node": "Wait",
             "type": "main",
             "index": 0
           }
@@ -198,6 +230,33 @@
           }
         ]
       ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request: Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -209,7 +268,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "48390a13-9cf7-414e-bfe7-0dd42b985b88",
+  "versionId": "2b0356e9-5f2b-4f6d-aca2-56620482399e",
   "meta": {
     "instanceId": "07f5c08fcf3b99a9fe0a37442391f215c67465f7438c40b14a531331c57ef922"
   },

@@ -1,5 +1,5 @@
 {
-  "name": "QWEN WF-3B Контроль бюджета токенов на Email",
+  "name": "RAG WF-3B_Token_Budget",
   "nodes": [
     {
       "parameters": {

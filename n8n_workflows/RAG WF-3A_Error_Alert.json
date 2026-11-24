@@ -1,5 +1,5 @@
 {
-  "name": "QWEN RAG WF-3A Error Alert Email",
+  "name": "RAG WF-3A_Error_Alert",
   "nodes": [
     {
       "parameters": {},

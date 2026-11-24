@@ -1,5 +1,5 @@
 {
-  "name": "QWEN RAG WF-2",
+  "name": "RAG WF-2 Query",
   "nodes": [
     {
       "parameters": {
@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst message = (body.message || '').toString().trim();\nif (!message) throw new Error('Пустой запрос: поле message обязательно');\n\n// Безопасная генерация session_id без require('crypto')\nconst fallbackId = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);\nconst session_id = (body.session_id || '').toString().trim() || fallbackId;\n\nreturn [{ json: { message, session_id } }];"
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst message = (body.message || '').toString().trim();\nif (!message) throw new Error('Пустой запрос: поле message обязательно');\n\nconst fallbackId = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);\nconst session_id = (body.session_id || '').toString().trim() || fallbackId;\n\n// ИЗМЕНЕНИЕ: извлекаем client_id, если нет — ставим 'default'\nconst client_id = (body.client_id || 'default').toString().trim();\n\nreturn [{ json: { message, session_id, client_id } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -60,9 +60,9 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT text, metadata FROM documents ORDER BY embedding <=> $1::vector LIMIT 15;",
+        "query": "   SELECT text, metadata FROM documents \n   WHERE client_id = $2 \n   ORDER BY embedding <=> $1::vector \n   LIMIT 15;",
         "options": {
-          "queryReplacement": "={{ JSON.stringify($json.data[0].embedding) }}"
+          "queryReplacement": "=   ={{ [JSON.stringify($json.data[0].embedding), $('Normalize').first().json.client_id] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -84,9 +84,9 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT role, content FROM chat_messages WHERE session_id = $1 ORDER BY created_at DESC LIMIT 10;",
+        "query": "   SELECT role, content FROM chat_messages \n   WHERE session_id = $1 AND client_id = $2 \n   ORDER BY created_at DESC \n   LIMIT 10;",
         "options": {
-          "queryReplacement": "={{ $('Normalize').first().json.session_id }}"
+          "queryReplacement": "=   ={{ [$('Normalize').first().json.session_id, $('Normalize').first().json.client_id] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -174,9 +174,9 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_messages (session_id, role, content) VALUES ($1, 'user', $2), ($1, 'assistant', $3);",
+        "query": "   INSERT INTO chat_messages (session_id, client_id, role, content) \n   VALUES ($1, $4, 'user', $2), ($1, $4, 'assistant', $3);",
         "options": {
-          "queryReplacement": "={{ $json.session_id }},{{ $json.user_message }},{{ $json.answer }}"
+          "queryReplacement": "=   ={{ [$json.session_id, $json.user_message, $json.answer, $('Normalize').first().json.client_id] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -355,7 +355,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
-  "versionId": "b903dfdc-8f15-4630-bbd3-7ae14bd809d3",
+  "versionId": "18e30536-3670-49f3-b626-932b17be2316",
   "meta": {
     "instanceId": "07f5c08fcf3b99a9fe0a37442391f215c67465f7438c40b14a531331c57ef922"
   },
