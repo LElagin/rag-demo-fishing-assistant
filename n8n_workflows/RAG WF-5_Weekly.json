@@ -1,0 +1,238 @@
+{
+  "name": "RAG WF-5_Weekly",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        1664,
+        256
+      ],
+      "id": "9aff2303-587a-4a81-bd8e-441330bd1c22",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT content FROM chat_messages WHERE role = 'user' AND client_id = 'default' AND created_at >= NOW() - INTERVAL '7 days' AND created_at < NOW();",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1904,
+        256
+      ],
+      "id": "c0d092cd-a034-400d-88d8-6b318e734907",
+      "name": "Fetch Queries",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst queries = items.map(item => item.json.content).filter(Boolean);\nconst count = queries.length;\nconst text = queries.join('\\n');\n\nconst messages = [\n  {\n    role: 'system',\n    content: 'Ты — аналитик. Проанализируй список вопросов покупателей. Сгруппируй их по смыслу и выдели ТОП-10 самых частых тем. Верни СТРОГО JSON-массив формата: [{\"theme\": \"Тема\", \"count\": N}, ...]. Не добавляй никакой текст кроме JSON.'\n  },\n  {\n    role: 'user',\n    content: text\n  }\n];\n\nreturn [{ json: { count, messages } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        256
+      ],
+      "id": "e50d502c-a046-4d7a-8956-ea0b7e80dce2",
+      "name": "Format Messages"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://foundation-models.api.cloud.ru/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "ai-sage/GigaChat3-10B-A1.8B"
+            },
+            {
+              "name": "messages",
+              "value": "={{ $json.messages }}"
+            },
+            {
+              "name": "temperature",
+              "value": "0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        2384,
+        256
+      ],
+      "id": "9653016c-f90a-4e1b-b450-2972c45fcff2",
+      "name": "LLM Grouping",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9HsopcS7bFxNghFw",
+          "name": "Header Auth RAG"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nlet content = resp.choices[0].message.content;\ncontent = content.replace(/```json/g, '').replace(/```/g, '').trim();\nlet topQueries = [];\ntry {\n  topQueries = JSON.parse(content);\n} catch (e) {\n  topQueries = [];\n}\nreturn [{ json: { topQueries } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2624,
+        256
+      ],
+      "id": "1edc6018-7dc5-495f-9397-fa17c1c318a6",
+      "name": "Parse LLM"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(SUM(total_tokens), 0) as total_tokens FROM llm_usage_log WHERE created_at >= NOW() - INTERVAL '7 days' AND created_at < NOW();",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2864,
+        256
+      ],
+      "id": "6d63bddb-d449-4cd2-8166-e1ab112ce927",
+      "name": "Fetch Tokens",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO stats_aggregates (client_id, period_type, period_start, period_end, total_queries, total_tokens, top_queries_json) VALUES ('default', 'week', $1, $2, $3, $4, $5::jsonb);",
+        "options": {
+          "queryReplacement": "={{ [new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0], new Date().toISOString().split('T')[0], $('Format Messages').first().json.count, $('Fetch Tokens').first().json.total_tokens, JSON.stringify($('Parse LLM').first().json.topQueries)] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3104,
+        256
+      ],
+      "id": "c04c5088-4bb7-4b3b-8ecd-59d8acb7b75a",
+      "name": "Save Weekly Stats",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Queries": {
+      "main": [
+        [
+          {
+            "node": "Format Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Messages": {
+      "main": [
+        [
+          {
+            "node": "LLM Grouping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Grouping": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM": {
+      "main": [
+        [
+          {
+            "node": "Fetch Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Tokens": {
+      "main": [
+        [
+          {
+            "node": "Save Weekly Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3cb96a00-ba88-40c1-b280-b523c4627801",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "07f5c08fcf3b99a9fe0a37442391f215c67465f7438c40b14a531331c57ef922"
+  },
+  "nodeGroups": [],
+  "id": "JJXpXzy4b63D5hvL",
+  "tags": []
+}

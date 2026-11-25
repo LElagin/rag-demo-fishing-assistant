@@ -1,0 +1,104 @@
+{
+  "name": "RAG WF-4_Cleanup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 4
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dd783be6-f7fe-4c78-af9c-30a4f5332454",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM documents WHERE client_id != 'default' AND created_at < NOW() - INTERVAL '7 days';\nDELETE FROM chat_messages WHERE client_id != 'default' AND created_at < NOW() - INTERVAL '7 days';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "82ee20a7-5029-4aac-9819-e51d6e7b3968",
+      "name": "Clean Demo Data",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM chat_messages WHERE created_at < NOW() - INTERVAL '35 days';\nDELETE FROM llm_usage_log WHERE created_at < NOW() - INTERVAL '35 days';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        448,
+        0
+      ],
+      "id": "6b968d49-17e1-4660-b4d2-c08b87ff82ee",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Clean Demo Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Demo Data": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "10d49684-1a14-46c3-81b5-29a8c3d868a7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "07f5c08fcf3b99a9fe0a37442391f215c67465f7438c40b14a531331c57ef922"
+  },
+  "nodeGroups": [],
+  "id": "m7sxJyvGVBieOuwV",
+  "tags": []
+}

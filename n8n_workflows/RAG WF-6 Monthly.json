@@ -1,0 +1,237 @@
+{
+  "name": "RAG WF-6 Monthly",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b00c73e1-93bf-4458-8a75-7ce099993642",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT content FROM chat_messages WHERE role = 'user' AND client_id = 'default' AND created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') AND created_at < DATE_TRUNC('month', CURRENT_DATE);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        256,
+        -48
+      ],
+      "id": "b036f6e3-c570-4d4c-9172-463b0f6cac2b",
+      "name": "Fetch Monthly Queries",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst queries = items.map(item => item.json.content).filter(Boolean);\nconst count = queries.length;\nconst text = queries.join('\\n');\n\nconst messages = [\n  {\n    role: 'system',\n    content: 'Ты — аналитик. Проанализируй список вопросов покупателей за месяц. Сгруппируй их по смыслу и выдели ТОП-10 самых частых тем. Верни СТРОГО JSON-массив формата: [{\"theme\": \"Тема\", \"count\": N}, ...]. Не добавляй никакой текст кроме JSON.'\n  },\n  {\n    role: 'user',\n    content: text\n  }\n];\n\nreturn [{ json: { count, messages } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "87ea6418-cfcd-44f2-9264-d33e09d4c265",
+      "name": "Format Monthly Messages"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://foundation-models.api.cloud.ru/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "ai-sage/GigaChat3-10B-A1.8B"
+            },
+            {
+              "name": "messages",
+              "value": "={{ $json.messages }}"
+            },
+            {
+              "name": "temperature",
+              "value": "0"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        720,
+        -64
+      ],
+      "id": "7abb5901-d9d1-40f0-8854-044822725419",
+      "name": "Monthly LLM Grouping",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9HsopcS7bFxNghFw",
+          "name": "Header Auth RAG"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nlet content = resp.choices[0].message.content;\ncontent = content.replace(/```json/g, '').replace(/```/g, '').trim();\nlet topQueries = [];\ntry {\n  topQueries = JSON.parse(content);\n} catch (e) {\n  topQueries = [];\n}\nreturn [{ json: { topQueries } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "id": "8779dd0e-dc20-46e0-9f25-3089a0336284",
+      "name": "Parse Monthly LLM"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(SUM(total_tokens), 0) as total_tokens FROM llm_usage_log WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') AND created_at < DATE_TRUNC('month', CURRENT_DATE);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1200,
+        -64
+      ],
+      "id": "659a3368-7d0c-4e4a-9397-fd8f2e194551",
+      "name": "Fetch Monthly Tokens",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO stats_aggregates (client_id, period_type, period_start, period_end, total_queries, total_tokens, top_queries_json) VALUES ('default', 'month', DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')::date, (DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 day')::date, $1, $2, $3::jsonb);",
+        "options": {
+          "queryReplacement": "={{ [$('Format Monthly Messages').first().json.count, $('Fetch Monthly Tokens').first().json.total_tokens, JSON.stringify($('Parse Monthly LLM').first().json.topQueries)] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "200695af-b330-4d49-b1d0-1490eb4b1b11",
+      "name": "Save Monthly Stats",
+      "credentials": {
+        "postgres": {
+          "id": "5PaPhRZOm9a74RNi",
+          "name": "Postgres RAG account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Monthly Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Monthly Queries": {
+      "main": [
+        [
+          {
+            "node": "Format Monthly Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Monthly Messages": {
+      "main": [
+        [
+          {
+            "node": "Monthly LLM Grouping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monthly LLM Grouping": {
+      "main": [
+        [
+          {
+            "node": "Parse Monthly LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Monthly LLM": {
+      "main": [
+        [
+          {
+            "node": "Fetch Monthly Tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Monthly Tokens": {
+      "main": [
+        [
+          {
+            "node": "Save Monthly Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b3719103-225f-4ef2-baeb-18998d2257a0",
+  "meta": {
+    "instanceId": "07f5c08fcf3b99a9fe0a37442391f215c67465f7438c40b14a531331c57ef922"
+  },
+  "nodeGroups": [],
+  "id": "Im9vJ74rh6swrcsX",
+  "tags": []
+}
